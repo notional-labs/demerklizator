@@ -18,7 +18,7 @@ const (
 )
 
 // Str constructs a random alphanumeric string of given length.
-func randStr(length int) string {
+func randByte(length int) []byte {
 	chars := []byte{}
 MAIN_LOOP:
 	for {
@@ -38,11 +38,11 @@ MAIN_LOOP:
 		}
 	}
 
-	return string(chars)
+	return chars
 }
 
 func newTempDB(t *testing.T) (db dbm.DB, dbName string) {
-	dbName = randStr(12) + ".db"
+	dbName = string(randByte(12)) + ".db"
 	db, err := openDB(dbName)
 	require.NoError(t, err)
 	return db, dbName
@@ -71,17 +71,35 @@ func TestLoadLatestStateToRootStore(t *testing.T) {
 	rs.MountStoreWithDB(storetypes.NewKVStoreKey("s1"), storetypes.StoreTypeIAVL, nil)
 	rs.MountStoreWithDB(storetypes.NewKVStoreKey("s2"), storetypes.StoreTypeIAVL, nil)
 
+	err := rs.LoadLatestVersion()
+	require.NoError(t, err)
+
 	s1 := rs.GetStoreByName("s1").(store.KVStore)
 	s2 := rs.GetStoreByName("s2").(store.KVStore)
 
-	s1.Set([]byte("key1"), []byte("value1"))
-	s2.Set([]byte("key2"), []byte("value2"))
+	kvMapS1 := map[string]string{}
+	kvMapS2 := map[string]string{}
+	for i := 0; i < 10; i++ {
+		rand1 := randByte(20)
+		rand2 := randByte(20)
+
+		kvMapS1[string(rand1)] = string(rand2)
+		s1.Set(rand1, rand2)
+
+		kvMapS2[string(rand2)] = string(rand1)
+		s2.Set(rand2, rand1)
+	}
 
 	rs.Commit()
 
-	err := db.Close()
+	err = db.Close()
 	require.NoError(t, err)
 
-	rs, latestVer := loadLatestStateToRootStore(dbName)
+	loadedRS, _ := loadLatestStateToRootStore(dbName)
 
+	loadedS1 := loadedRS.GetStoreByName("s1").(store.KVStore)
+	loadedS2 := loadedRS.GetStoreByName("s2").(store.KVStore)
+
+	checkKVStoreData(t, loadedS1, kvMapS1)
+	checkKVStoreData(t, loadedS2, kvMapS2)
 }
