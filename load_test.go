@@ -42,7 +42,7 @@ MAIN_LOOP:
 }
 
 func newTempDB(t *testing.T) (db dbm.DB, dbName string) {
-	dbName = string(randByte(12)) + ".db"
+	dbName = t.TempDir()
 	db, err := openDB(dbName)
 	require.NoError(t, err)
 	return db, dbName
