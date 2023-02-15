@@ -48,7 +48,20 @@ func newTempDB(t *testing.T) (db dbm.DB, dbName string) {
 	return db, dbName
 }
 
-func checkStore
+func checkKVStoreData(t *testing.T, kvStore store.KVStore, kvMap map[string]string) {
+	itr := kvStore.Iterator(nil, nil)
+
+	entries_num := 0
+	for itr.Valid() {
+		expectedValue := kvMap[string(itr.Key())]
+		require.Equal(t, expectedValue, string(itr.Value()))
+		entries_num += 1
+		itr.Next()
+	}
+	itr.Close()
+
+	require.Equal(t, entries_num, len(kvMap))
+}
 
 func TestLoadLatestStateToRootStore(t *testing.T) {
 	db, dbName := newTempDB(t)
@@ -63,18 +76,12 @@ func TestLoadLatestStateToRootStore(t *testing.T) {
 
 	s1.Set([]byte("key1"), []byte("value1"))
 	s2.Set([]byte("key2"), []byte("value2"))
-	
+
 	rs.Commit()
 
 	err := db.Close()
 	require.NoError(t, err)
 
 	rs, latestVer := loadLatestStateToRootStore(dbName)
-	
-	
-
-
-
-
 
 }
