@@ -87,5 +87,5 @@ func newRootStoreAtPath(dbPath string) (*rootmulti.Store, dbm.DB) {
 	db := openDB(dbPath)
 
 	rootStore := store.NewCommitMultiStore(db).(*rootmulti.Store)
-	return rootStore, dbm.NewMemDB()
+	return rootStore, db
 }
