@@ -1,7 +1,6 @@
 package demerklizator
 
 import (
-	"github.com/cosmos/cosmos-sdk/store"
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 )
@@ -17,14 +16,11 @@ func copyStateDataFromIAVLStoreToDBStore(iavlStore storetypes.KVStore, dbStore s
 	itr.Close()
 }
 
-func MigrateLatestStateDataToDBStore(applicationDBPath string, outApplicationDBPath string) {
-	rootStore, latestVersion := loadLatestStateToRootStore(applicationDBPath)
+func MigrateLatestStateDataToDBStores(applicationDBPath string, outApplicationDBPath string) {
+	rootStore, db := loadLatestStateToRootStore(applicationDBPath, storetypes.StoreTypeIAVL)
+	latestVersion := rootmulti.GetLatestVersion(db)
 
-	outDB, err := openDB(outApplicationDBPath)
-	if err != nil {
-		panic(err)
-	}
-	outRootStore := store.NewCommitMultiStore(outDB).(*rootmulti.Store)
+	outRootStore, outDB := newRootStoreAtPath(outApplicationDBPath)
 
 	// get all the stores from rootStore, which is all iavl stores
 	iavlStores := rootStore.GetStores()
@@ -35,6 +31,7 @@ func MigrateLatestStateDataToDBStore(applicationDBPath string, outApplicationDBP
 	for storeKey := range iavlStores {
 		outRootStore.MountStoreWithDB(storeKey, storetypes.StoreTypeDB, nil)
 	}
+	outRootStore.LoadLatestVersion()
 	outRootStore.SetInitialVersion(latestVersion)
 
 	// get all the stores from outRootStore, which is empty db stores
@@ -46,4 +43,6 @@ func MigrateLatestStateDataToDBStore(applicationDBPath string, outApplicationDBP
 		copyStateDataFromIAVLStoreToDBStore(iavlStore, dbStore)
 	}
 	outRootStore.Commit()
+	outDB.Close()
+	db.Close()
 }

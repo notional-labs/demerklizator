@@ -16,10 +16,25 @@ const (
 	commitInfoKeyFmt = "s/%d" // s/<version>
 )
 
-func openDB(dbPath string) (dbm.DB, error) {
+func openDB(dbPath string) dbm.DB {
 	dbName := strings.Trim(filepath.Base(dbPath), ".db")
 
-	return sdk.NewLevelDB(dbName, filepath.Dir(dbPath))
+	db, err := sdk.NewLevelDB(dbName, filepath.Dir(dbPath))
+	if err != nil {
+		panic(err)
+	}
+	return db
+}
+
+func mountKVStoresToRootStore(rs *rootmulti.Store, keys []string, storetyp storetypes.StoreType) {
+	for _, key := range keys {
+		rs.MountStoreWithDB(storetypes.NewKVStoreKey(key), storetyp, nil)
+	}
+
+	err := rs.LoadLatestVersion()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func applicationDBPathFromRootDir(rootDir string) string {
@@ -57,28 +72,20 @@ func getStoreKeys(db dbm.DB) (storeKeys []string) {
 	return
 }
 
-func loadLatestStateToRootStore(applicationDBPath string) (rootStore *rootmulti.Store, latestVersion int64) {
-	db, err := openDB(applicationDBPath)
-	if err != nil {
-		panic(err)
-	}
+func loadLatestStateToRootStore(applicationDBPath string, storetype storetypes.StoreType) (rootStore *rootmulti.Store, db dbm.DB) {
+	rootStore, db = newRootStoreAtPath(applicationDBPath)
 
-	rs := store.NewCommitMultiStore(db)
 	storeKeys := getStoreKeys(db)
 	// mount all the module stores to root store
-	for _, storeKey := range storeKeys {
-		rs.MountStoreWithDB(storetypes.NewKVStoreKey(storeKey), storetypes.StoreTypeIAVL, nil)
-	}
-	latestVersion = rootmulti.GetLatestVersion(db)
-	rs.LoadVersion(latestVersion)
-	return rs.(*rootmulti.Store), latestVersion
+	mountKVStoresToRootStore(rootStore, storeKeys, storetype)
+
+	rootStore.LoadLatestVersion()
+	return rootStore, db
 }
 
-func NewEmptyRootStore(applicationDBPath string) *rootmulti.Store {
-	outDB, err := openDB(applicationDBPath)
-	if err != nil {
-		panic(err)
-	}
+func newRootStoreAtPath(dbPath string) (*rootmulti.Store, dbm.DB) {
+	db := openDB(dbPath)
 
-	return store.NewCommitMultiStore(outDB).(*rootmulti.Store)
+	rootStore := store.NewCommitMultiStore(db).(*rootmulti.Store)
+	return rootStore, dbm.NewMemDB()
 }
