@@ -32,7 +32,7 @@ func MigrateLatestStateDataToDBStore(applicationDBPath string, outApplicationDBP
 	// mount all the empty db stores to outRootStore
 	// for each iavl stores mounted on rootStore,
 	// we mount an empty db store on rootStore with the same key
-	for storeKey, _ := range iavlStores {
+	for storeKey := range iavlStores {
 		outRootStore.MountStoreWithDB(storeKey, storetypes.StoreTypeDB, nil)
 	}
 	outRootStore.SetInitialVersion(latestVersion)
