@@ -31,6 +31,7 @@ func mountKVStoresToRootStore(rs *rootmulti.Store, keys []string, storetyp store
 		rs.MountStoreWithDB(storetypes.NewKVStoreKey(key), storetyp, nil)
 	}
 
+	// load lastest version so that store is added to rs.stores as per LoadVersion() logic
 	err := rs.LoadLatestVersion()
 	if err != nil {
 		panic(err)

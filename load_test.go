@@ -74,11 +74,7 @@ func TestLoadLatestStateToRootStore(t *testing.T) {
 
 	rs, db := newRootStoreAtPath(dbName)
 
-	rs.MountStoreWithDB(storetypes.NewKVStoreKey("s1"), storetypes.StoreTypeIAVL, nil)
-	rs.MountStoreWithDB(storetypes.NewKVStoreKey("s2"), storetypes.StoreTypeIAVL, nil)
-
-	err := rs.LoadLatestVersion()
-	require.NoError(t, err)
+	mountKVStoresToRootStore(rs, []string{"s1", "s2"}, storetypes.StoreTypeIAVL)
 
 	s1 := rs.GetStoreByName("s1").(store.KVStore)
 	s2 := rs.GetStoreByName("s2").(store.KVStore)
@@ -88,7 +84,7 @@ func TestLoadLatestStateToRootStore(t *testing.T) {
 
 	rs.Commit()
 
-	err = db.Close()
+	err := db.Close()
 	require.NoError(t, err)
 
 	loadedRS, db := loadLatestStateToRootStore(dbName, storetypes.StoreTypeIAVL)
