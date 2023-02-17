@@ -19,8 +19,9 @@ func TestMigrateIAVLStoreToDBStore(t *testing.T) {
 
 	store1 := rs.GetStoreByName("store1").(store.KVStore)
 	store2 := rs.GetStoreByName("store2").(store.KVStore)
-	kvMapStore1 := setDataForKVStore(store1)
-	kvMapStore2 := setDataForKVStore(store2)
+
+	kvMapStore1 := setRandomDataForKVStore(store1)
+	kvMapStore2 := setRandomDataForKVStore(store2)
 
 	rs.Commit()
 
