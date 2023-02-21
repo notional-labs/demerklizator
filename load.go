@@ -38,7 +38,7 @@ func mountKVStoresToRootStore(rs *rootmulti.Store, keys []string, storetyp store
 	}
 }
 
-func applicationDBPathFromRootDir(rootDir string) string {
+func ApplicationDBPathFromRootDir(rootDir string) string {
 	return filepath.Join(rootDir, "data", "applica")
 }
 
