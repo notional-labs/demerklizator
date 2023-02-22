@@ -12,15 +12,16 @@ var version = "0.0.1"
 var rootCmd = &cobra.Command{
 	Use:     "demerk",
 	Version: version,
-	Short:   "demerk -  a tool to convert iavl merklized data to normal db data",
+	Short:   "demerk - a tool to convert iavl merklized data to normal db data",
 
 	Run: func(cmd *cobra.Command, args []string) {
 
-		fromPath := args[0]
-		outPath := args[1]
+		rootDir := args[0]
+		outRootDir := args[1]
 		//convert fromPath before parsing to from field
-		fromPath = demerklizator.ApplicationDBPathFromRootDir(fromPath)
-		demerklizator.MigrateLatestStateDataToDBStores(fromPath, outPath)
+		applicationDBPath := demerklizator.ApplicationDBPathFromRootDir(rootDir)
+		outApplicationDBPath := demerklizator.ApplicationDBPathFromRootDir(outRootDir)
+		demerklizator.MigrateLatestStateDataToDBStores(applicationDBPath, outApplicationDBPath)
 	},
 }
 

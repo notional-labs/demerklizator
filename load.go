@@ -39,7 +39,7 @@ func mountKVStoresToRootStore(rs *rootmulti.Store, keys []string, storetyp store
 }
 
 func ApplicationDBPathFromRootDir(rootDir string) string {
-	return filepath.Join(rootDir, "data", "applica")
+	return filepath.Join(rootDir, "data", "application.db")
 }
 
 func getCommitInfo(db dbm.DB, ver int64) (*storetypes.CommitInfo, error) {
