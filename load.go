@@ -16,7 +16,7 @@ const (
 	commitInfoKeyFmt = "s/%d" // s/<version>
 )
 
-// openDB instantiates LSM tree database
+// openDB instantiates LevelDB database
 func openDB(dbPath string) dbm.DB {
 	dbName := strings.Trim(filepath.Base(dbPath), ".db")
 
@@ -27,6 +27,7 @@ func openDB(dbPath string) dbm.DB {
 	return db
 }
 
+// mountKVStoresToRootStore populates rootmulti.Store with KV pairs
 func mountKVStoresToRootStore(rs *rootmulti.Store, keys []string, storetyp storetypes.StoreType) {
 	for _, key := range keys {
 		rs.MountStoreWithDB(storetypes.NewKVStoreKey(key), storetyp, nil)
@@ -39,10 +40,12 @@ func mountKVStoresToRootStore(rs *rootmulti.Store, keys []string, storetyp store
 	}
 }
 
+// ApplicationDBPathFromRootDir returns default path to database
 func ApplicationDBPathFromRootDir(rootDir string) string {
 	return filepath.Join(rootDir, "data", "application.db")
 }
 
+// getCommitInfo fetches block's commit info
 func getCommitInfo(db dbm.DB, ver int64) (*storetypes.CommitInfo, error) {
 	cInfoKey := fmt.Sprintf(commitInfoKeyFmt, ver)
 
@@ -61,6 +64,7 @@ func getCommitInfo(db dbm.DB, ver int64) (*storetypes.CommitInfo, error) {
 	return cInfo, nil
 }
 
+// getStoreKeys gets store keys of a latest version in database
 func getStoreKeys(db dbm.DB) (storeKeys []string) {
 	latestVer := rootmulti.GetLatestVersion(db)
 	latestCommitInfo, err := getCommitInfo(db, latestVer)
@@ -74,6 +78,7 @@ func getStoreKeys(db dbm.DB) (storeKeys []string) {
 	return
 }
 
+// loadLatestStateToRootStore loads a latest state of database to root multistore
 func loadLatestStateToRootStore(applicationDBPath string, storetype storetypes.StoreType) (rootStore *rootmulti.Store, db dbm.DB, err error) {
 	rootStore, db = newRootStoreAtPath(applicationDBPath)
 
@@ -89,6 +94,7 @@ func loadLatestStateToRootStore(applicationDBPath string, storetype storetypes.S
 	return
 }
 
+// newRootStoreAtPath creates a new instance of commit multistore at specified database path
 func newRootStoreAtPath(dbPath string) (*rootmulti.Store, dbm.DB) {
 	db := openDB(dbPath)
 

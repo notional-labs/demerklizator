@@ -18,6 +18,7 @@ func copyStateDataFromIAVLStoreToDBStore(iavlStore storetypes.KVStore, dbStore s
 	itr.Close()
 }
 
+// MigrateLatestStateDataToDBStores creates a store at outApplicationDBPath path and populates it with data from application db
 func MigrateLatestStateDataToDBStores(applicationDBPath string, outApplicationDBPath string) error {
 	rootStore, db, err := loadLatestStateToRootStore(applicationDBPath, storetypes.StoreTypeIAVL)
 	if err != nil {
