@@ -27,7 +27,7 @@ func openDB(dbPath string) dbm.DB {
 	return db
 }
 
-// mountKVStoresToRootStore populates rootmulti.Store with KV pairs
+// mountKVStoresToRootStore populates rootmulti.Store with sub KV stores
 func mountKVStoresToRootStore(rs *rootmulti.Store, keys []string, storetyp storetypes.StoreType) {
 	for _, key := range keys {
 		rs.MountStoreWithDB(storetypes.NewKVStoreKey(key), storetyp, nil)
