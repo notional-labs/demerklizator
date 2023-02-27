@@ -16,6 +16,7 @@ const (
 	commitInfoKeyFmt = "s/%d" // s/<version>
 )
 
+// openDB instantiates LSM tree database
 func openDB(dbPath string) dbm.DB {
 	dbName := strings.Trim(filepath.Base(dbPath), ".db")
 
@@ -73,15 +74,19 @@ func getStoreKeys(db dbm.DB) (storeKeys []string) {
 	return
 }
 
-func loadLatestStateToRootStore(applicationDBPath string, storetype storetypes.StoreType) (rootStore *rootmulti.Store, db dbm.DB) {
+func loadLatestStateToRootStore(applicationDBPath string, storetype storetypes.StoreType) (rootStore *rootmulti.Store, db dbm.DB, err error) {
 	rootStore, db = newRootStoreAtPath(applicationDBPath)
 
 	storeKeys := getStoreKeys(db)
 	// mount all the module stores to root store
 	mountKVStoresToRootStore(rootStore, storeKeys, storetype)
 
-	rootStore.LoadLatestVersion()
-	return rootStore, db
+	err = rootStore.LoadLatestVersion()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return
 }
 
 func newRootStoreAtPath(dbPath string) (*rootmulti.Store, dbm.DB) {

@@ -28,7 +28,8 @@ func TestLoadLatestStateToRootStore(t *testing.T) {
 	err := db.Close()
 	require.NoError(t, err)
 
-	loadedRS, db := loadLatestStateToRootStore(dbName, storetypes.StoreTypeIAVL)
+	loadedRS, db, err := loadLatestStateToRootStore(dbName, storetypes.StoreTypeIAVL)
+	require.NoError(t, err)
 
 	loadedS1 := loadedRS.GetStoreByName("s1").(store.KVStore)
 	loadedS2 := loadedRS.GetStoreByName("s2").(store.KVStore)
