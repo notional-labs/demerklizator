@@ -45,7 +45,7 @@ func ApplicationDBPathFromRootDir(rootDir string) string {
 	return filepath.Join(rootDir, "data", "application.db")
 }
 
-// getCommitInfo fetches block's commit info
+// getCommitInfo fetches block's commit info from disk
 func getCommitInfo(db dbm.DB, ver int64) (*storetypes.CommitInfo, error) {
 	cInfoKey := fmt.Sprintf(commitInfoKeyFmt, ver)
 
