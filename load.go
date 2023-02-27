@@ -78,7 +78,7 @@ func getStoreKeys(db dbm.DB) (storeKeys []string) {
 	return
 }
 
-// loadLatestStateToRootStore loads a latest state of database to root multistore
+// loadLatestStateToRootStore loads a latest state of database to root multi store
 func loadLatestStateToRootStore(applicationDBPath string, storetype storetypes.StoreType) (rootStore *rootmulti.Store, db dbm.DB, err error) {
 	rootStore, db = newRootStoreAtPath(applicationDBPath)
 
