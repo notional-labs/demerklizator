@@ -39,3 +39,17 @@ func TestLoadLatestStateToRootStore(t *testing.T) {
 
 	db.Close()
 }
+
+func TestFetchLatestCommitInfoFromIAVLStoreToRelationalStore(t *testing.T) {
+	merkleDB := t.TempDir()
+	relationalDB := t.TempDir()
+
+	// Cleanup
+	defer func() {
+		os.RemoveAll(merkleDB)
+		os.RemoveAll(relationalDB)
+	}()
+
+	fetchLatestCommitInfoFromIAVLStoreToRelationalStore(merkleDB, relationalDB)
+
+}

@@ -9,10 +9,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	dbm "github.com/tendermint/tm-db"
 )
 
 const (
+	latestVersionKey = "s/latest"
 	commitInfoKeyFmt = "s/%d" // s/<version>
 )
 
@@ -94,10 +96,30 @@ func loadLatestStateToRootStore(applicationDBPath string, storetype storetypes.S
 	return
 }
 
-// newRootStoreAtPath creates a new instance of commit multistore at specified database path
+// newRootStoreAtPath returns an instance of commit multistore at specified database path
 func newRootStoreAtPath(dbPath string) (*rootmulti.Store, dbm.DB) {
 	db := openDB(dbPath)
 
 	rootStore := store.NewCommitMultiStore(db).(*rootmulti.Store)
 	return rootStore, db
+}
+
+func fetchLatestCommitInfoFromIAVLStoreToRelationalStore(merkleDBPath, relationalDBPath string) error {
+	// merkleCommitMultistore, merkleDB := newRootStoreAtPath(merkleDBPath)
+	// relationalCo2mmitMultistore, relationalDB := newRootStoreAtPath(relationalDBPath)
+
+	merkleDB := openDB(merkleDBPath)
+
+	bz, err := merkleDB.Get([]byte(latestVersionKey))
+	if err != nil {
+		return err
+	}
+
+	var latestVersion int64
+
+	if err := gogotypes.StdInt64Unmarshal(&latestVersion, bz); err != nil {
+		panic(err)
+	}
+
+	return nil
 }
