@@ -49,6 +49,19 @@ func ApplicationDBPathFromRootDir(rootDir string) string {
 
 // getCommitInfo fetches block's commit info from disk
 func getCommitInfo(db dbm.DB, ver int64) (*storetypes.CommitInfo, error) {
+
+	bz, err := getCommitInfoBz(db, ver)
+
+	cInfo := &storetypes.CommitInfo{}
+	if err = cInfo.Unmarshal(bz); err != nil {
+		return nil, fmt.Errorf("failed unmarshal commit info: %s", err)
+	}
+
+	return cInfo, nil
+}
+
+// getCommitInfo fetches block's commit info in bytes form from the disk
+func getCommitInfoBz(db dbm.DB, ver int64) ([]byte, error) {
 	cInfoKey := fmt.Sprintf(commitInfoKeyFmt, ver)
 
 	bz, err := db.Get([]byte(cInfoKey))
@@ -57,13 +70,7 @@ func getCommitInfo(db dbm.DB, ver int64) (*storetypes.CommitInfo, error) {
 	} else if bz == nil {
 		return nil, fmt.Errorf("no commit info found")
 	}
-
-	cInfo := &storetypes.CommitInfo{}
-	if err = cInfo.Unmarshal(bz); err != nil {
-		return nil, fmt.Errorf("failed unmarshal commit info: %s", err)
-	}
-
-	return cInfo, nil
+	return bz, nil
 }
 
 // getStoreKeys gets store keys of a latest version in database
@@ -105,10 +112,8 @@ func newRootStoreAtPath(dbPath string) (*rootmulti.Store, dbm.DB) {
 }
 
 func fetchLatestCommitInfoFromIAVLStoreToRelationalStore(merkleDBPath, relationalDBPath string) error {
-	// merkleCommitMultistore, merkleDB := newRootStoreAtPath(merkleDBPath)
-	// relationalCo2mmitMultistore, relationalDB := newRootStoreAtPath(relationalDBPath)
-
 	merkleDB := openDB(merkleDBPath)
+	relationalDB := openDB(relationalDBPath)
 
 	bz, err := merkleDB.Get([]byte(latestVersionKey))
 	if err != nil {
@@ -118,8 +123,16 @@ func fetchLatestCommitInfoFromIAVLStoreToRelationalStore(merkleDBPath, relationa
 	var latestVersion int64
 
 	if err := gogotypes.StdInt64Unmarshal(&latestVersion, bz); err != nil {
-		panic(err)
+		return err
 	}
 
+	bz, err = getCommitInfoBz(merkleDB, latestVersion)
+	if err != nil {
+		return err
+	}
+
+	commitInfoKey := []byte(fmt.Sprintf(commitInfoKeyFmt, latestVersion))
+
+	relationalDB.Set(commitInfoKey, bz)
 	return nil
 }

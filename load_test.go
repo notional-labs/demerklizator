@@ -1,11 +1,13 @@
 package demerklizator
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,15 +43,46 @@ func TestLoadLatestStateToRootStore(t *testing.T) {
 }
 
 func TestFetchLatestCommitInfoFromIAVLStoreToRelationalStore(t *testing.T) {
-	merkleDB := t.TempDir()
-	relationalDB := t.TempDir()
+	// Setup dbs
+	merkleDBPath := t.TempDir()
+	merkleRS, merkleDB := newRootStoreAtPath(merkleDBPath)
+
+	relationalDBPath := t.TempDir()
+	// relationalDB := openDB(relationalDBPath)
 
 	// Cleanup
 	defer func() {
-		os.RemoveAll(merkleDB)
-		os.RemoveAll(relationalDB)
+		os.RemoveAll(merkleDBPath)
+		os.RemoveAll(relationalDBPath)
 	}()
 
-	fetchLatestCommitInfoFromIAVLStoreToRelationalStore(merkleDB, relationalDB)
+	mountKVStoresToRootStore(merkleRS, []string{"s1", "s2"}, storetypes.StoreTypeIAVL)
 
+	s1 := merkleRS.GetStoreByName("s1").(store.KVStore)
+	s2 := merkleRS.GetStoreByName("s2").(store.KVStore)
+
+	_ = setRandomDataForKVStore(s1)
+	_ = setRandomDataForKVStore(s2)
+
+	merkleRS.Commit()
+
+	err := merkleDB.Close()
+	require.NoError(t, err)
+
+	merkleRS, merkleDB, err = loadLatestStateToRootStore(merkleDBPath, storetypes.StoreTypeIAVL)
+	require.NoError(t, err)
+
+	fetchLatestCommitInfoFromIAVLStoreToRelationalStore(merkleDBPath, relationalDBPath)
+
+	bz, err := merkleDB.Get([]byte(latestVersionKey))
+	require.NoError(t, err)
+
+	var latestVersion int64
+
+	err = gogotypes.StdInt64Unmarshal(&latestVersion, bz)
+	require.NoError(t, err)
+
+	commitInfo, err := getCommitInfo(merkleDB, latestVersion)
+	require.NoError(t, err)
+	fmt.Println(commitInfo)
 }
