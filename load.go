@@ -111,10 +111,7 @@ func newRootStoreAtPath(dbPath string) (*rootmulti.Store, dbm.DB) {
 	return rootStore, db
 }
 
-func fetchLatestCommitInfoFromIAVLStoreToRelationalStore(merkleDBPath, relationalDBPath string) error {
-	merkleDB := openDB(merkleDBPath)
-	relationalDB := openDB(relationalDBPath)
-
+func fetchLatestCommitInfoFromIAVLStoreToRelationalStore(merkleDB, relationalDB dbm.DB) error {
 	bz, err := merkleDB.Get([]byte(latestVersionKey))
 	if err != nil {
 		return err

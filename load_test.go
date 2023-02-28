@@ -1,7 +1,6 @@
 package demerklizator
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -45,10 +44,9 @@ func TestLoadLatestStateToRootStore(t *testing.T) {
 func TestFetchLatestCommitInfoFromIAVLStoreToRelationalStore(t *testing.T) {
 	// Setup dbs
 	merkleDBPath := t.TempDir()
-	merkleRS, merkleDB := newRootStoreAtPath(merkleDBPath)
 
 	relationalDBPath := t.TempDir()
-	// relationalDB := openDB(relationalDBPath)
+	relationalDB := openDB(relationalDBPath)
 
 	// Cleanup
 	defer func() {
@@ -56,13 +54,15 @@ func TestFetchLatestCommitInfoFromIAVLStoreToRelationalStore(t *testing.T) {
 		os.RemoveAll(relationalDBPath)
 	}()
 
+	merkleRS, merkleDB := newRootStoreAtPath(merkleDBPath)
+
 	mountKVStoresToRootStore(merkleRS, []string{"s1", "s2"}, storetypes.StoreTypeIAVL)
 
 	s1 := merkleRS.GetStoreByName("s1").(store.KVStore)
 	s2 := merkleRS.GetStoreByName("s2").(store.KVStore)
 
-	_ = setRandomDataForKVStore(s1)
-	_ = setRandomDataForKVStore(s2)
+	setRandomDataForKVStore(s1)
+	setRandomDataForKVStore(s2)
 
 	merkleRS.Commit()
 
@@ -72,7 +72,7 @@ func TestFetchLatestCommitInfoFromIAVLStoreToRelationalStore(t *testing.T) {
 	merkleRS, merkleDB, err = loadLatestStateToRootStore(merkleDBPath, storetypes.StoreTypeIAVL)
 	require.NoError(t, err)
 
-	fetchLatestCommitInfoFromIAVLStoreToRelationalStore(merkleDBPath, relationalDBPath)
+	fetchLatestCommitInfoFromIAVLStoreToRelationalStore(merkleDB, relationalDB)
 
 	bz, err := merkleDB.Get([]byte(latestVersionKey))
 	require.NoError(t, err)
@@ -82,7 +82,11 @@ func TestFetchLatestCommitInfoFromIAVLStoreToRelationalStore(t *testing.T) {
 	err = gogotypes.StdInt64Unmarshal(&latestVersion, bz)
 	require.NoError(t, err)
 
-	commitInfo, err := getCommitInfo(merkleDB, latestVersion)
+	expectedCommitInfo, err := getCommitInfo(merkleDB, latestVersion)
 	require.NoError(t, err)
-	fmt.Println(commitInfo)
+
+	actualCommitInfo, err := getCommitInfo(relationalDB, latestVersion)
+	require.NoError(t, err)
+
+	require.Equal(t, expectedCommitInfo, actualCommitInfo)
 }
