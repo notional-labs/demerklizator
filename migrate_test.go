@@ -30,9 +30,12 @@ func TestMigrateIAVLStoreToDBStore(t *testing.T) {
 
 	migrateDBName := t.TempDir()
 	defer os.RemoveAll(migrateDBName)
-	MigrateLatestStateDataToDBStores(dbName, migrateDBName)
 
-	migratedRS, migratedDB := loadLatestStateToRootStore(migrateDBName, storetypes.StoreTypeDB)
+	err = MigrateLatestStateDataToDBStores(dbName, migrateDBName)
+	require.NoError(t, err)
+
+	migratedRS, migratedDB, err := loadLatestStateToRootStore(migrateDBName, storetypes.StoreTypeDB)
+	require.NoError(t, err)
 
 	migratedStore1 := migratedRS.GetStoreByName("store1").(store.KVStore)
 	migratedStore2 := migratedRS.GetStoreByName("store2").(store.KVStore)

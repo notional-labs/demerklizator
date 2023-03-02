@@ -1,6 +1,8 @@
 package demerklizator
 
 import (
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 )
@@ -16,8 +18,13 @@ func copyStateDataFromIAVLStoreToDBStore(iavlStore storetypes.KVStore, dbStore s
 	itr.Close()
 }
 
-func MigrateLatestStateDataToDBStores(applicationDBPath string, outApplicationDBPath string) {
-	rootStore, db := loadLatestStateToRootStore(applicationDBPath, storetypes.StoreTypeIAVL)
+// MigrateLatestStateDataToDBStores creates a store at outApplicationDBPath path and populates it with data from application db
+func MigrateLatestStateDataToDBStores(applicationDBPath string, outApplicationDBPath string) error {
+	rootStore, db, err := loadLatestStateToRootStore(applicationDBPath, storetypes.StoreTypeIAVL)
+	if err != nil {
+		return fmt.Errorf("Failed to load latest state to root store: %s", err.Error())
+	}
+
 	latestVersion := rootmulti.GetLatestVersion(db)
 
 	outRootStore, outDB := newRootStoreAtPath(outApplicationDBPath)
@@ -31,8 +38,15 @@ func MigrateLatestStateDataToDBStores(applicationDBPath string, outApplicationDB
 	for storeKey := range iavlStores {
 		outRootStore.MountStoreWithDB(storeKey, storetypes.StoreTypeDB, nil)
 	}
-	outRootStore.LoadLatestVersion()
-	outRootStore.SetInitialVersion(latestVersion)
+	err = outRootStore.LoadLatestVersion()
+	if err != nil {
+		return err
+	}
+
+	err = outRootStore.SetInitialVersion(latestVersion)
+	if err != nil {
+		return err
+	}
 
 	// get all the stores from outRootStore, which is empty db stores
 	dbStores := outRootStore.GetStores()
@@ -45,4 +59,6 @@ func MigrateLatestStateDataToDBStores(applicationDBPath string, outApplicationDB
 	outRootStore.Commit()
 	outDB.Close()
 	db.Close()
+
+	return nil
 }

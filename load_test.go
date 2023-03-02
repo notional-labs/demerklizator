@@ -6,6 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,7 +29,8 @@ func TestLoadLatestStateToRootStore(t *testing.T) {
 	err := db.Close()
 	require.NoError(t, err)
 
-	loadedRS, db := loadLatestStateToRootStore(dbName, storetypes.StoreTypeIAVL)
+	loadedRS, db, err := loadLatestStateToRootStore(dbName, storetypes.StoreTypeIAVL)
+	require.NoError(t, err)
 
 	loadedS1 := loadedRS.GetStoreByName("s1").(store.KVStore)
 	loadedS2 := loadedRS.GetStoreByName("s2").(store.KVStore)
@@ -37,4 +39,54 @@ func TestLoadLatestStateToRootStore(t *testing.T) {
 	checkKVStoreData(t, loadedS2, kvMapS2)
 
 	db.Close()
+}
+
+func TestFetchLatestCommitInfoFromIAVLStoreToRelationalStore(t *testing.T) {
+	// Setup dbs
+	merkleDBPath := t.TempDir()
+
+	relationalDBPath := t.TempDir()
+	relationalDB := openDB(relationalDBPath)
+
+	// Cleanup
+	defer func() {
+		os.RemoveAll(merkleDBPath)
+		os.RemoveAll(relationalDBPath)
+	}()
+
+	merkleRS, merkleDB := newRootStoreAtPath(merkleDBPath)
+
+	mountKVStoresToRootStore(merkleRS, []string{"s1", "s2"}, storetypes.StoreTypeIAVL)
+
+	s1 := merkleRS.GetStoreByName("s1").(store.KVStore)
+	s2 := merkleRS.GetStoreByName("s2").(store.KVStore)
+
+	setRandomDataForKVStore(s1)
+	setRandomDataForKVStore(s2)
+
+	merkleRS.Commit()
+
+	err := merkleDB.Close()
+	require.NoError(t, err)
+
+	merkleRS, merkleDB, err = loadLatestStateToRootStore(merkleDBPath, storetypes.StoreTypeIAVL)
+	require.NoError(t, err)
+
+	fetchLatestCommitInfoFromIAVLStoreToRelationalStore(merkleDB, relationalDB)
+
+	bz, err := merkleDB.Get([]byte(latestVersionKey))
+	require.NoError(t, err)
+
+	var latestVersion int64
+
+	err = gogotypes.StdInt64Unmarshal(&latestVersion, bz)
+	require.NoError(t, err)
+
+	expectedCommitInfo, err := getCommitInfo(merkleDB, latestVersion)
+	require.NoError(t, err)
+
+	actualCommitInfo, err := getCommitInfo(relationalDB, latestVersion)
+	require.NoError(t, err)
+
+	require.Equal(t, expectedCommitInfo, actualCommitInfo)
 }
