@@ -31,8 +31,14 @@ func MigrateLatestStateDataToDBStores(applicationDBPath string, outApplicationDB
 	for storeKey := range iavlStores {
 		outRootStore.MountStoreWithDB(storeKey, storetypes.StoreTypeDB, nil)
 	}
-	outRootStore.LoadLatestVersion()
-	outRootStore.SetInitialVersion(latestVersion)
+	err := outRootStore.LoadLatestVersion()
+	if err != nil {
+		panic(err)
+	}
+	err = outRootStore.SetInitialVersion(latestVersion)
+	if err != nil {
+		panic(err)
+	}
 
 	// get all the stores from outRootStore, which is empty db stores
 	dbStores := outRootStore.GetStores()

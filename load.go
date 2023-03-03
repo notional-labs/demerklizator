@@ -80,7 +80,10 @@ func loadLatestStateToRootStore(applicationDBPath string, storetype storetypes.S
 	// mount all the module stores to root store
 	mountKVStoresToRootStore(rootStore, storeKeys, storetype)
 
-	rootStore.LoadLatestVersion()
+	err := rootStore.LoadLatestVersion()
+	if err != nil {
+		panic(err)
+	}
 	return rootStore, db
 }
 
